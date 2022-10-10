@@ -22,7 +22,7 @@ extern void load_grammar(FILE *);
 
 inline void put_usage(void);
 
-void print_lhs(struct lhs_t);
+void print_lhs(void);
 
 int main(int argc, char **argv)
 {
@@ -38,11 +38,8 @@ int main(int argc, char **argv)
     }
 
     load_grammar(fin);
-    for (size_t i = 0; i < lhs_size; i++)
-    {
-        print_lhs(lhs[i]);
-    }
-    
+    print_lhs();
+
     return 0;
 }
 
@@ -51,12 +48,16 @@ void put_usage(void)
     puts("usage: fuerza-bruta <grammar path> <string>");
 }
 
-void print_lhs(struct lhs_t lhs)
+void print_lhs(void)
 {
-    printf("NT=%c, MAX=%d, FIRST=%d\n", lhs.nt, lhs.max, lhs.first);
-    for (size_t rhs_idx = 0; rhs_idx < lhs.max; rhs_idx++)
+    size_t r = 1;
+    for (size_t i = 0; i < lhs_size; i++)
     {
-        printf("%c := %s\n", lhs.nt, rhs[lhs.first + rhs_idx]);
+        printf("NT=%c, MAX=%d, FIRST=%d\n", lhs[i].nt, lhs[i].max, lhs[i].first);
+        for (size_t rhs_idx = 0; rhs_idx < lhs[i].max; rhs_idx++)
+        {
+            printf("%d. %c := %s\n", r, lhs[i].nt, rhs[lhs[i].first + rhs_idx]);
+            r++;
+        }
     }
-    
 }
