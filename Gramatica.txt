@@ -1,0 +1,10 @@
+E T
+E TK
+K +T
+K +TK
+T F
+T FR
+R *F
+R *FR
+F (E)
+F a
