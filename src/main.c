@@ -52,21 +52,20 @@ enum state_enum
 
 //-- prototypes --
 inline void put_usage(void);
-void print_lhs(void);
 int parse(char *);
 
 int lhs_compare(const char *, const struct lhs_type *);
 int lhs_find(const char *);
 void sent_insert(const char *);
-void print_state(int, const char*);
+
+void print_state(int, const char *);
+void print_lhs(void);
 
 int main(int argc, char **argv)
 {
-    ++argv;
-    --argc;
     FILE *fin = NULL;
-    if (argc > 0)
-        fin = fopen(argv[0], "r");
+    if (argc > 2)
+        fin = fopen(argv[1], "r");
     else
     {
         put_usage();
@@ -74,13 +73,16 @@ int main(int argc, char **argv)
     }
 
     load_grammar(fin);
-    //print_lhs();
-    int result = parse(argv[1]);
-    if(result == 0){
-        puts("String has been accepted");
-    }else{
+    // print_lhs();
+    int result = parse(argv[2]);
+    if (result == 0)
+    {
+        puts("\nString accepted");
+    }
+    else
+    {
         //Ñao ñao amigao
-        puts("String has not been accepted");
+        puts("\nString not accepted");
     }
     return 0;
 }
@@ -88,20 +90,6 @@ int main(int argc, char **argv)
 void put_usage(void)
 {
     puts("usage: fuerza-bruta <grammar path> <string>");
-}
-
-void print_lhs(void)
-{
-    size_t r = 1;
-    for (size_t i = 0; i < lhs_size; i++)
-    {
-        printf("NT=%c, MAX=%d, FIRST=%d\n", lhs[i].nt, lhs[i].max, lhs[i].first);
-        for (size_t rhs_idx = 0; rhs_idx < lhs[i].max; rhs_idx++)
-        {
-            printf("%d. %c := %s\n", r, lhs[i].nt, rhs[lhs[i].first + rhs_idx]);
-            r++;
-        }
-    }
 }
 
 int parse(char *T)
@@ -185,11 +173,11 @@ int parse(char *T)
         /// 4. select case
         size_t rhs_idx;
         size_t rhs_len;
-        printf("%d. Using case %d \n", loop++ , conf_case);
+        printf("%d. case %d \n", loop++, conf_case);
         switch (conf_case)
         {
         case 1:
-            //Tree expansion (First production of a nonterminal)
+            // Tree expansion (First production of a nonterminal)
             hist_sz++;
             hist_curr.p_num = 1;
             hist_curr.symb = sent_tchar;
@@ -198,7 +186,7 @@ int parse(char *T)
             sent_insert(rhs[rhs_idx]);
             break;
         case 2:
-            //Input symbol match (Advance the index into the input string)
+            // Input symbol match (Advance the index into the input string)
             hist_sz++;
             hist_curr.p_num = 0;
             hist_curr.symb = sent_tchar;
@@ -206,11 +194,11 @@ int parse(char *T)
             sent_sz--;
             break;
         case 3:
-            //Terminate (Successful parse has been performed)
+            // Terminate (Successful parse has been performed)
             state = TERMINATION;
             return EXIT_SUCCESS;
         case 4:
-            //Input symbol mismatch (A generated substring failed to match the input)
+            // Input symbol mismatch (A generated substring failed to match the input)
             state = BACKTRACK;
             break;
         case 5:
@@ -220,7 +208,7 @@ int parse(char *T)
             hist_sz--;
             break;
         case 6:
-            //6a. Next alternate, replace with next production
+            // 6a. Next alternate, replace with next production
             state = PARSE;
             rhs_idx = lhs[lhs_find(&(hist_curr.symb))].first + (hist_curr.p_num - 1);
             rhs_len = strlen(rhs[rhs_idx]);
@@ -229,7 +217,7 @@ int parse(char *T)
             sent_insert(rhs[rhs_idx + 1]);
             break;
         case 7:
-            //6c. the alternates for A has been exhausted; remove Aj)
+            // 6c. the alternates for A has been exhausted; remove Aj)
             rhs_idx = lhs[lhs_find(&(hist_curr.symb))].first + (hist_curr.p_num - 1);
             rhs_len = strlen(rhs[rhs_idx]);
             sent_sz -= rhs_len;
@@ -237,30 +225,41 @@ int parse(char *T)
             hist_sz--;
             break;
         default:
-            //You shouldnt be here
+            // You shouldnt be here
             return EXIT_FAILURE;
         }
     }
-    
+
     return 0;
 }
 
+// returns 0 if equal
 int lhs_compare(const char *key, const struct lhs_type *elem)
 {
-    // returns 0 if equal
     return !(*key == elem->nt);
 }
 
-void sent_insert(const char *key){
+void sent_insert(const char *key)
+{
     size_t key_len = strlen(key);
-    //size_t j = 0;
     for (int i = key_len - 1; i >= 0; i--)
     {
         sent[sent_sz++] = key[i];
     }
 }
 
-void print_state(int idx, const char* key){
+/**
+ * Find non-terminal character in lhs
+ * @return index of matching key in lhs, -1 if not found.
+ */
+int lhs_find(const char *key)
+{
+    struct lhs_type *fs_ptr = (struct lhs_type *)lfind(key, lhs, &lhs_size, sizeof(struct lhs_type), &lhs_compare);
+    return (fs_ptr) ? (fs_ptr - lhs) : -1;
+}
+
+void print_state(int idx, const char *key)
+{
     char state_c;
     switch (state)
     {
@@ -277,29 +276,33 @@ void print_state(int idx, const char* key){
     printf("[ %c ; %d ; ", state_c, idx);
     for (size_t i = 0; i < hist_sz; i++)
     {
-        if( hist[i].p_num != 0){
+        if (hist[i].p_num != 0)
+        {
             printf("%c%d ", hist[i].symb, hist[i].p_num);
-        }else{
+        }
+        else
+        {
             printf("%c ", hist[i].symb);
         }
-        
     }
     printf("; ");
     for (int i = sent_top; i > 0; i--)
     {
         printf("%c", sent[i]);
     }
-    printf(" ] %s \n", (key+idx));
-    
+    printf(" ] %s \n", (key + idx));
 }
 
-
-/**
- * Find non-terminal character in lhs
- * @return index of matching key in lhs, -1 if not found.
-*/
-int lhs_find(const char *key)
+void print_lhs(void)
 {
-    struct lhs_type *fs_ptr = (struct lhs_type *)lfind(key, lhs, &lhs_size, sizeof(struct lhs_type), &lhs_compare);
-    return (fs_ptr) ? (fs_ptr - lhs) : -1;
+    size_t r = 1;
+    for (size_t i = 0; i < lhs_size; i++)
+    {
+        printf("NT=%c, MAX=%d, FIRST=%d\n", lhs[i].nt, lhs[i].max, lhs[i].first);
+        for (size_t rhs_idx = 0; rhs_idx < lhs[i].max; rhs_idx++)
+        {
+            printf("%d. %c := %s\n", r, lhs[i].nt, rhs[lhs[i].first + rhs_idx]);
+            r++;
+        }
+    }
 }
