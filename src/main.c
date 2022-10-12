@@ -110,13 +110,13 @@ int parse(char *T)
 
     /// 1. Initialize
     size_t idx = 0;
-    // Using \0 as end marker
     size_t t_len = strlen(T);
-    // \e is a stand in for empty character
-    hist[hist_sz++] = (struct hist_type){
-        .symb = '\e',
+    // \a is a stand in for empty character
+    hist[0] = (struct hist_type){
+        .symb = '\a',
         .p_num = 0,
     };
+    // Using \0 as end marker
     memcpy(sent, (char[2]){'\0', lhs[0].nt}, 2 * sizeof(char));
     sent_sz += 2;
     int loop = 1;
@@ -125,8 +125,6 @@ int parse(char *T)
     {
         print_state(idx, T);
         /// 3. get stack-top elements and determine configuration
-        //struct hist_type hist_curr = hist[hist_top];
-        //char sent_tchar = sent[sent_top];
         if (state == PARSE && idx == t_len && sent_top == '\0')
         {
             conf_case = 3;
@@ -216,10 +214,10 @@ int parse(char *T)
             state = BACKTRACK;
             break;
         case 5:
-            //Backtrack on input
+            // Backtrack on input
             idx--;
-            hist_sz--;
             sent[sent_sz++] = hist_curr.symb;
+            hist_sz--;
             break;
         case 6:
             //6a. Next alternate, replace with next production
